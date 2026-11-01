@@ -831,10 +831,33 @@ void Graphe<Objet>::reqComposantesFortementConnexes(std::vector<std::vector<Obje
 
 template <typename Objet>
 int Graphe<Objet>::dijkstra(const Objet& p_eOrigine, const Objet& p_eDestination, std::vector<Objet>& p_chemin) {
-   // std::vector<Objet> cheminSommet = p_eOrigine->
-    p_chemin.push_back(p_eOrigine);
+    Sommet* origine;
+    Sommet* destination;
 
-    return 0;
+    _initPathFinding(p_eOrigine, p_eDestination, origine, destination);
+
+    while (true) {
+        Sommet* sommet_u = nullptr;
+
+        for (Sommet* sommet = m_listSommets;sommet;sommet = sommet->m_suivant) {
+            if (!sommet->m_etat &&(!sommet_u ||sommet->m_cout < sommet_u->m_cout) ) {
+                sommet_u = sommet;
+            }
+        }
+
+        sommet_u->m_etat= true;
+        if (sommet_u == destination) {break;}
+
+        for (Arc* arc= sommet_u->m_listeDest;arc;arc=arc->m_suivDest) {
+            int distance_deux_sommet = sommet_u->m_cout + arc->m_cout;
+            if (distance_deux_sommet < arc->m_dest->m_cout) {
+                arc->m_dest->m_cout = distance_deux_sommet;
+                arc->m_dest->m_predecesseur = sommet_u;
+            }
+        }
+    }
+    _recupererChemin(destination,p_chemin);
+    return destination->m_cout;
 }
 
 template <typename Objet>

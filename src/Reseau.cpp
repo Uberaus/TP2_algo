@@ -136,7 +136,7 @@ std::vector<Routeur>
 Reseau::determinerMinParcours (const Routeur& p_routeurOrigine, const Routeur& p_routeurDestination, int& p_nbSecondes)
 {
     std::vector<Routeur> lChemin;
-    m_graphe.dijkstra (p_routeurOrigine, p_routeurDestination, lChemin);
+    p_nbSecondes = m_graphe.dijkstra (p_routeurOrigine, p_routeurDestination, lChemin);
     return lChemin;
 }
 
