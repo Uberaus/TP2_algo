@@ -6,7 +6,8 @@
 *.lo
 *.o
 *.obj
-
+.git
+.idea
 # Precompiled Headers
 *.gch
 *.pch
@@ -16,6 +17,7 @@
 
 # Debugger Files
 *.pdb
+cmake-build-debug
 
 # Compiled Dynamic libraries
 *.so
