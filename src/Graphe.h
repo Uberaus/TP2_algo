@@ -142,6 +142,7 @@ private:
                           std::vector<Objet>& chemin);
 
     void _parcoursDFS(Sommet* p_Origine, std::list<Sommet*>& p_ListeSommetsVisites) const;
+    void  _parcoursDFS2(Sommet* p_origine, std::list<Sommet*>& p_listeSommetsVisites) const;
     void _initEtatSommets(bool p_Etat) const;
 
     // Attributs Graphe

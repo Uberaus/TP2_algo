@@ -16,6 +16,7 @@
 #include <functional>
 #include <iostream>
 
+
 using namespace std;
 
 //classe interne Sommet
@@ -826,11 +827,57 @@ ostream& operator<<(ostream& p_out, const Graphe<Objet>& p_graphe)
 
 template <typename Objet>
 void Graphe<Objet>::reqComposantesFortementConnexes(std::vector<std::vector<Objet>>&p_composantes) const {
+    p_composantes.clear();
+
+    std::stack<Sommet*> sommets_visite;
+    Graphe<Objet> graphe_inverse;
+
+    for (Sommet* sommet = m_listSommets; sommet; sommet = sommet->m_suivant) {
+        graphe_inverse.ajouterSommet(sommet->m_numero, sommet->m_etiquette);
+    }
+
+    for (Sommet* sommet = m_listSommets; sommet; sommet = sommet->m_suivant) {
+        for (Arc* arc = sommet->m_listeDest; arc; arc = arc->m_suivDest) {
+            graphe_inverse.ajouterArc(arc->m_dest->m_numero, sommet->m_numero, arc->m_cout);
+        }
+    }
+
+    _initEtatSommets(false);
+
+    for (Sommet* sommet = m_listSommets; sommet; sommet= sommet->m_suivant) {
+        if (!sommet->m_etat) {
+            std::list<Sommet*> liste_sommets;
+            _parcoursDFS2(sommet, liste_sommets );
+            for (auto s: liste_sommets) {
+                sommets_visite.push(s);
+            }
+        }
+
+    }
+
+    graphe_inverse._initEtatSommets(false);
+
+    while (!sommets_visite.empty()) {
+        Sommet* sommet = sommets_visite.top();
+        sommets_visite.pop();
+        Sommet* sommet_inverse = graphe_inverse._reqSommet(sommet->m_numero);
+        if (!sommet_inverse->m_etat) {
+            std::list<Sommet*> sommets_connexes;
+            graphe_inverse._parcoursDFS(sommet_inverse, sommets_connexes);
+            std::vector<Objet> composante;
+            for (Sommet* s : sommets_connexes) {
+                composante.push_back(s->m_etiquette);
+            }
+            p_composantes.push_back(composante);
+        }
+    }
 
 }
 
 template <typename Objet>
 int Graphe<Objet>::dijkstra(const Objet& p_eOrigine, const Objet& p_eDestination, std::vector<Objet>& p_chemin) {
+    p_chemin.clear();
+
     Sommet* origine;
     Sommet* destination;
 
@@ -862,10 +909,46 @@ int Graphe<Objet>::dijkstra(const Objet& p_eOrigine, const Objet& p_eDestination
 
 template <typename Objet>
 void Graphe<Objet>::reqPointsArticulation(std::vector<Objet>& p_sommets) const {
+    p_sommets.clear();
+    if (!estFortementConnexe()) { return; }
+    for (auto sommet = m_listSommets;sommet;sommet=sommet->m_suivant) {
+        Graphe<Objet> graphe_copie = Graphe(*this);
+        graphe_copie.enleverSommet( sommet->m_numero );
+        std::vector<std::vector<Objet>> composantes;
+        graphe_copie.reqComposantesFortementConnexes(composantes);
+        if (composantes.size() > 1)
+            p_sommets.push_back(sommet->m_etiquette);
+    }
 
 }
 
 template <typename Objet>
 bool Graphe<Objet>::estFortementConnexe() const {
-    return false;
+
+    for (Sommet* sommet = m_listSommets;sommet;sommet=sommet->m_suivant) {
+        _initEtatSommets(false);
+        std::list<Sommet*> visite;
+        _parcoursDFS(sommet,visite);
+        if (static_cast<int>(visite.size())!= m_nbSommets) {return false;}
+    }
+    return true;
+}
+
+template <typename Objet>
+void Graphe<Objet>::_parcoursDFS2(Sommet* p_origine, std::list<Sommet*>& p_listeSommetsVisites) const
+{
+
+    p_origine->m_etat = true;
+
+    //Les voisins:
+    Arc* lArc = p_origine->m_listeDest;
+    while (lArc)
+    {
+        if (lArc->m_dest->m_etat == false)
+        {
+            _parcoursDFS2(lArc->m_dest, p_listeSommetsVisites);
+        }
+        lArc = lArc->m_suivDest;
+    }
+    p_listeSommetsVisites.push_back(p_origine);
 }

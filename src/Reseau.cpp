@@ -129,7 +129,7 @@ Reseau::reqRouteurs (std::vector<Routeur>& p_vRouteurs) const
 
 bool Reseau::routeursAccessibles () const{
 
-    return true;
+    return m_graphe.estFortementConnexe();
 }
 
 std::vector<Routeur>
@@ -144,5 +144,6 @@ std::vector<Routeur>
 Reseau::reqRouteursCritiques() const{
 
     std::vector<Routeur> RCritiques;
+    m_graphe.reqPointsArticulation(RCritiques);
     return RCritiques;
 }
