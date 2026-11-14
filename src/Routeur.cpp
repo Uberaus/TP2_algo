@@ -1,6 +1,6 @@
 /**
 * \file Routeur.cpp
- * \author GLO-2100 & IFT-2008
+ * \author GLO-2100 & IFT-2008 Jesse Veilleux NI:111188903
  * \version 0.1
  * \date Automne 2026
  *

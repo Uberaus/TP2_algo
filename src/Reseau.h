@@ -1,7 +1,7 @@
 /**
 * \file Reseau.h
  * \brief interface pour un reseau informatique
- * \author GLO-2100 & IFT-2008, Étudiant(e)
+ * \author GLO-2100 & IFT-2008, Jesse Veilleux NI:111188903
  * \version 0.1
  * \date Automne 2026
  *

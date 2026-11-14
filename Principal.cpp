@@ -1,7 +1,7 @@
 /**
 * \file Principal.cpp
  * \brief Ce fichier contient un main pour tester le réseau.
- * \author GLO-2100 & IFT-2008
+ * \author GLO-2100 & IFT-2008 Jesse Veilleux NI:111188903
  * \version 0.1
  * \date Automne 2026
  *

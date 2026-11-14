@@ -1,7 +1,7 @@
 /**
 * \file Graphe.hpp
  * \brief Implémentation des méthodes définies dans Graphe.h
- * \author GLO-2100 & IFT-2008, Étudiant(e)
+ * \author GLO-2100 & IFT-2008, Jesse Veilleux NI:111188903
  * \version 0.1
  * \date Automne 2026
  *
@@ -825,23 +825,37 @@ ostream& operator<<(ostream& p_out, const Graphe<Objet>& p_graphe)
     return p_out;
 }
 
+/**
+ * \brief Détermine les composantes fortement connexes du graphe (algorithme de Kosaraju)
+ * \param p_composantes Les composantes fortement connexes, chacune étant un vecteur d'étiquettes
+ * \pre Aucune
+ * \post Le graphe est inchangé (hormis l'état temporaire des sommets)
+ * \post p_composantes contient exactement une composante par ensemble de sommets mutuellement accessibles
+ * \post Chaque sommet du graphe appartient à une et une seule composante
+ */
 template <typename Objet>
 void Graphe<Objet>::reqComposantesFortementConnexes(std::vector<std::vector<Objet>>&p_composantes) const {
     p_composantes.clear();
 
+    // Algorithme de Kosaraju :DFS sur le graphe pour obtenir l'ordre de fin,
+    // DFS sur le graphe inverse en suivant cet ordre (du dernier terminé au premier).
     std::stack<Sommet*> sommets_visite;
     Graphe<Objet> graphe_inverse;
 
+    // Construction du graphe inverse
     for (Sommet* sommet = m_listSommets; sommet; sommet = sommet->m_suivant) {
         graphe_inverse.ajouterSommet(sommet->m_numero, sommet->m_etiquette);
     }
 
+    // tous les arcs renversés (destination -> origine)
     for (Sommet* sommet = m_listSommets; sommet; sommet = sommet->m_suivant) {
         for (Arc* arc = sommet->m_listeDest; arc; arc = arc->m_suivDest) {
             graphe_inverse.ajouterArc(arc->m_dest->m_numero, sommet->m_numero, arc->m_cout);
         }
     }
 
+    // Premier passage,DFS depuis chaque sommet non visité, les sommets sont
+    // empilés en post-ordre, donc le sommet terminé en dernier est au sommet de la pile
     _initEtatSommets(false);
 
     for (Sommet* sommet = m_listSommets; sommet; sommet= sommet->m_suivant) {
@@ -855,6 +869,8 @@ void Graphe<Objet>::reqComposantesFortementConnexes(std::vector<std::vector<Obje
 
     }
 
+    // Second passage,on dépile et on fait un DFS sur le graphe inverse,chaque DFS
+    // qui part d'un sommet non visité découvre exactement une composante fortement connexe
     graphe_inverse._initEtatSommets(false);
 
     while (!sommets_visite.empty()) {
@@ -874,16 +890,30 @@ void Graphe<Objet>::reqComposantesFortementConnexes(std::vector<std::vector<Obje
 
 }
 
+/**
+ * \brief Trouve le plus court chemin entre deux sommets avec l'algorithme de Dijkstra
+ * \param p_eOrigine L'étiquette du sommet d'origine
+ * \param p_eDestination L'étiquette du sommet de destination
+ * \param p_chemin Les étiquettes du chemin de l'origine à la destination (vide si aucun chemin)
+ * \pre Les sommets d'origine et de destination existent dans le graphe
+ * \pre Tous les coûts des arcs sont >= 0
+ * \post Le graphe est inchangé (hormis l'état temporaire des sommets)
+ * \post p_chemin contient le chemin de coût minimal, dans l'ordre, s'il existe
+ * \return Le coût total du chemin
+ */
 template <typename Objet>
 int Graphe<Objet>::dijkstra(const Objet& p_eOrigine, const Objet& p_eDestination, std::vector<Objet>& p_chemin) {
     p_chemin.clear();
 
     Sommet* origine;
     Sommet* destination;
+    const int INFINI = std::numeric_limits<int>::max() / 2;
 
+    // Initialisation des coûts à "infini", coût de l'origine à 0, aucun sommet visité (fonction déjà implémentée)
     _initPathFinding(p_eOrigine, p_eDestination, origine, destination);
 
     while (true) {
+        // On cherche le sommet non visité ayant le plus petit coût
         Sommet* sommet_u = nullptr;
 
         for (Sommet* sommet = m_listSommets;sommet;sommet = sommet->m_suivant) {
@@ -891,10 +921,14 @@ int Graphe<Objet>::dijkstra(const Objet& p_eOrigine, const Objet& p_eDestination
                 sommet_u = sommet;
             }
         }
+        // Plus aucun sommet accessible,la destination est inatteignable
+        if (!sommet_u || sommet_u->m_cout >= INFINI) { break; }
 
         sommet_u->m_etat= true;
+        // Le coût d'un sommet visité est définitif, on peut arrêter à la destination
         if (sommet_u == destination) {break;}
 
+        // Relaxation des arcs sortants de sommet_u
         for (Arc* arc= sommet_u->m_listeDest;arc;arc=arc->m_suivDest) {
             int distance_deux_sommet = sommet_u->m_cout + arc->m_cout;
             if (distance_deux_sommet < arc->m_dest->m_cout) {
@@ -903,17 +937,31 @@ int Graphe<Objet>::dijkstra(const Objet& p_eOrigine, const Objet& p_eDestination
             }
         }
     }
+
+    // Aucun chemin trouvé on retourne -1 et p_chemin reste vide
+    if (destination->m_cout >= INFINI) { return -1; }
+
+    // Reconstruction du chemin à partir des prédécesseurs
     _recupererChemin(destination,p_chemin);
     return destination->m_cout;
 }
 
+/**
+ * \brief Détermine les points d'articulation d'un graphe orienté fortement connexe
+ * \param p_sommets Les étiquettes des sommets dont le retrait rend le graphe non fortement connexe
+ * \post Le graphe est inchangé
+ * \post p_sommets est vide si le graphe n'est pas fortement connexe ou n'a aucun point d'articulation
+ */
 template <typename Objet>
 void Graphe<Objet>::reqPointsArticulation(std::vector<Objet>& p_sommets) const {
     p_sommets.clear();
+    // on ne cherche des points d'articulation que dans un graphe fortement connexe
     if (!estFortementConnexe()) { return; }
     for (auto sommet = m_listSommets;sommet;sommet=sommet->m_suivant) {
+        // On retire le sommet d'une copie du graphe
         Graphe<Objet> graphe_copie = Graphe(*this);
         graphe_copie.enleverSommet( sommet->m_numero );
+        // s'il reste plus d'une composante fortement connexe, c'est un point d'articulation
         std::vector<std::vector<Objet>> composantes;
         graphe_copie.reqComposantesFortementConnexes(composantes);
         if (composantes.size() > 1)
@@ -922,9 +970,15 @@ void Graphe<Objet>::reqPointsArticulation(std::vector<Objet>& p_sommets) const {
 
 }
 
+/**
+ * \brief Détermine si le graphe est fortement connexe
+ * \post Le graphe est inchangé (hormis l'état temporaire des sommets)
+ * \return "true" si chaque sommet peut atteindre tous les autres, "false" sinon
+ */
 template <typename Objet>
 bool Graphe<Objet>::estFortementConnexe() const {
 
+    // Fortement connexe si, depuis chaque sommet, un DFS atteint tous les sommets du graphe
     for (Sommet* sommet = m_listSommets;sommet;sommet=sommet->m_suivant) {
         _initEtatSommets(false);
         std::list<Sommet*> visite;
@@ -934,21 +988,33 @@ bool Graphe<Objet>::estFortementConnexe() const {
     return true;
 }
 
+/**
+ * \brief Parcours en profondeur qui enregistre les sommets en post-ordre (ordre de fin de traitement)
+ * \param p_origine Le sommet de départ du parcours
+ * \param p_listeSommetsVisites Les sommets visités, ajoutés à la fin une fois leurs voisins traités
+ * \return aucun
+ * \pre p_origine n'est pas nul
+ * \pre L'état des sommets a été initialisé avec _initEtatSommets(false)
+ * \post Tous les sommets accessibles depuis p_origine sont marqués visités
+ */
 template <typename Objet>
 void Graphe<Objet>::_parcoursDFS2(Sommet* p_origine, std::list<Sommet*>& p_listeSommetsVisites) const
 {
 
+    // On marque le sommet visité avant de explorer ses voisins (évite les boucles dans les cycles)
     p_origine->m_etat = true;
 
     //Les voisins:
     Arc* lArc = p_origine->m_listeDest;
     while (lArc)
     {
+        // Récursion seulement sur les voisins pas encore visités
         if (lArc->m_dest->m_etat == false)
         {
             _parcoursDFS2(lArc->m_dest, p_listeSommetsVisites);
         }
         lArc = lArc->m_suivDest;
     }
+    // Ajout en post-ordre, le sommet est enregistré après que tous ses descendants sont terminés
     p_listeSommetsVisites.push_back(p_origine);
 }

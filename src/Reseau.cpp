@@ -1,6 +1,6 @@
 /** \file Reseau.cpp
  * \brief Définition de l'interface pour un reseau informatique
- * \author GLO-2100 & IFT-2008, Étudiant(e)
+ * \author GLO-2100 & IFT-2008, Jesse Veilleux NI:111188903
  * \version 0.1
  * \date Automne 2026
  *
@@ -127,23 +127,44 @@ Reseau::reqRouteurs (std::vector<Routeur>& p_vRouteurs) const
     p_vRouteurs = m_graphe.listerEtiquetteSommets ();
 }
 
+/**
+ * \brief Détermine si tout routeur est accessible depuis n'importe quel autre routeur
+ * \post Le réseau est inchangé
+ * \return "true" si le graphe du réseau est fortement connexe, "false" sinon
+ */
 bool Reseau::routeursAccessibles () const{
 
+    // Tous les routeurs sont mutuellement accessibles <=> le graphe est fortement connexe
     return m_graphe.estFortementConnexe();
 }
 
+/**
+ * \brief Trouve le parcours de délai minimal entre deux routeurs
+ * \param p_routeurOrigine Le routeur d'origine
+ * \param p_routeurDestination Le routeur de destination
+ * \param p_nbSecondes Le temps de transmission total du parcours, -1 s'il n'y a aucun parcours
+ * \post Le réseau est inchangé
+ * \return Le parcours, de l'origine à la destination; un vecteur vide s'il n'existe aucun parcours
+ */
 std::vector<Routeur>
 Reseau::determinerMinParcours (const Routeur& p_routeurOrigine, const Routeur& p_routeurDestination, int& p_nbSecondes)
 {
     std::vector<Routeur> lChemin;
+    // Le graphe retourne le coût total (-1 si aucun chemin) et remplit le chemin
     p_nbSecondes = m_graphe.dijkstra (p_routeurOrigine, p_routeurDestination, lChemin);
     return lChemin;
 }
 
+/**
+ * \brief Détermine les routeurs critiques du réseau
+ * \post Le réseau est inchangé
+ * \return Les routeurs dont la panne rend certains routeurs inaccessibles; un vecteur vide s'il n'y en a pas
+ */
 std::vector<Routeur>
 Reseau::reqRouteursCritiques() const{
 
     std::vector<Routeur> RCritiques;
+    // Les routeurs critiques sont les points d'articulation du graphe
     m_graphe.reqPointsArticulation(RCritiques);
     return RCritiques;
 }
